@@ -26,6 +26,8 @@ Point=ellipticCurveMod.Point
 Infinity=ellipticCurveMod.Infinity
 ModP = modular.ModP
 
+MIN_MSG_LEN = 64
+
 #一个类：用于存储密文，密文包括两个参数a,b
 #class to store the cyphertext
 class Ciphertext (object):
@@ -40,7 +42,7 @@ class Ciphertext (object):
 class IBE():
 
     def __init__(self, seed=None):
-        self.outputFile = open('parameters.txt','w')
+        # self.outputFile = open('parameters.txt','w')
         self.P = None
         self.Ppub = None
         self.EC = None
@@ -168,6 +170,25 @@ class IBE():
         c = bytearray(len(a))
         for i in range(len(a)):
             c[i] = a[i] ^ b[i]
+        # --------------------------
+        # c = bytearray(len(b))
+        # i = 0
+        # while i < len(a):
+        #     c[i] = a[i]^b[i]
+        #     i = i + 1
+            
+        # while i < len(b):
+        #     c[i] = b[i]
+        #     i = i + 1
+        # --------------------------
+        # i=0
+        # while i<len(b):
+        #     j=0
+        #     while j<len(a) and i<len(b):
+        #         c[i] = a[j]^b[i]
+        #         i=i+1
+        #         j=j+1
+        # --------------------------
         return c
      
     def setup(self):
@@ -243,68 +264,24 @@ class IBE():
         self.b = b
         self.s = s
 
-        self.store_sys_paras(p, q, P, Ppub, s)
-
-        # return P, Ppub, EC, p, q, s, Fp2, b
-
-    def store_sys_paras(self, p, q, P, Ppub, s):
-        output = {}
-        output['p'] = p
-        output['q'] = q
-        output['s'] = s
-
-        point = [P.x.n, P.y.n]
-        output['P'] = point
-
-        point = [Ppub.x.n, Ppub.y.n]
-        output['Ppub'] = point
-
-        filename = 'sys_paras.json'
-        # output['s'] = s
-        with open(filename, 'w') as f_obj:
-            json.dump(output, f_obj)
-        # print("Ppub is equal to %s " % Ppub)
-
-    def load_sys_paras(self):
-        filename = 'sys_paras.json'
-        # output['s'] = s
-        with open(filename) as f_obj:
-            sys_paras = json.load(f_obj)
-        self.p = sys_paras['p']
-        self.q = sys_paras['q']
-        self.Fp = FiniteField(self.p,1)
-        self.Fp2 = FiniteField(self.p, 2, Polynomial([ModP(1, self.p), ModP(1, self.p), ModP(1, self.p)], self.p))
-        self.b = self.Fp2([0, 1])
-        self.EC = EllipticCurve(ModP(0, self.p), ModP(1, self.p))
-        self.s = sys_paras['s']
-        P_x, P_y = self.get_point_from_list(sys_paras['P'])
-        Ppub_x, Ppub_y = self.get_point_from_list(sys_paras['Ppub'])
-        self.P = Point(self.EC, P_x, P_y)
-        self.Ppub = Point(self.EC, Ppub_x, Ppub_y)
-
-    def get_point_from_list(self, point):
-        x = point[0]
-        y = point[1]
-        Px = ModP(x, self.p)
-        Py = ModP(y, self.p)
-        return Px, Py
+        return p, q, P, Ppub, s
 
     def extract(self, ID):
         s = self.s
-        print("-------------------------------")
-        print("The hashed point is:")
+        # print("-------------------------------")
+        # print("The hashed point is:")
 
         QID = self.hash(ID)
-        print(QID)
+        # print(QID)
 
         DID = s*QID
-        print("DID is equal to: %s" % DID)
+        # print("DID is equal to: %s" % DID)
         # self.outputFile.write('DID is equal to: '+str(DID)+'\n')
         return DID.x.n, DID.y.n
 
     # 向Alice发送密文
     def encrypt(self, ID, Msg):
-        #M = "hello, this is a test. are you sure this is working? I could easily break your decryption!"
+        ## M = "hello, this is a test. are you sure this is working? I could easily break your decryption!"
 
         q = self.q
         Ppub = self.Ppub
@@ -312,58 +289,58 @@ class IBE():
         b = self.b
         P = self.P
 
-        print("-------------------------------")
-        print("The receiver's QID is:")
+        # print("-------------------------------")
+        # print("The receiver's QID is:")
         QID = self.hash(ID)
         # QID = hash(ID,EC,p, P, q)
-        print(QID)
+        # print(QID)
 
-        # r应该随机取值
-        #r in F_l^x
+        ## r应该随机取值
+        ## r in F_l^x
         random.seed(self.seed)
         r = random.randint(2, self.q-1)
         # r = int(343)
         # r = int(3247)
-        #r = int(7)
-        print("r is equal to:")
-        print(r)
+        ## r = int(7)
+        # print("r is equal to:")
+        # print(r)
 
 
-        print("-------------------------------")
-        print("Test if points are of order")
-        print(q)
-        print("Point q*QID Alice")
-        print(q*QID)
-        print("Point q*Ppub")
-        print(q*Ppub)
+        # print("-------------------------------")
+        # print("Test if points are of order")
+        # print(q)
+        # print("Point q*QID Alice")
+        # print(q*QID)
+        # print("Point q*Ppub")
+        # print(q*Ppub)
 
         print("-------------------------------")
         print("Weil pairing and verification")
 
-        #define the points of the Elliptic Curve to the new
-        #elliptic curve. we have an inclusion  
-        #E(Fp) EC E(Fp^2)
-        #but for further computation, we need to be able to
-        #work over the new elliptic curve (for the weil pairing)
+        ## define the points of the Elliptic Curve to the new
+        ## elliptic curve. we have an inclusion  
+        ## E(Fp) EC E(Fp^2)
+        ## but for further computation, we need to be able to
+        ## work over the new elliptic curve (for the weil pairing)
         E2 = EllipticCurve2( Fp2([0]), Fp2([1]), Fp2)
         QID2 = Point2(E2, Fp2([QID.x.n]), Fp2([QID.y.n]))
         Ppub2 = Point2(E2, Fp2([Ppub.x.n]), Fp2([Ppub.y.n]))
-
         gID = ModifWeil(QID2, Ppub2, q, b)
-
-        print("gID is equal to:")
-        print(gID)
-
-        print("Check if it is a qth rooth:")
-        print(gID**(q)) 
-
-
         print("-------------------------------")
-        print("Encryption")
-        print("The message to encrypt is : %s" % Msg)
+        # print("gID is equal to:")
+        # print(gID)
+
+        # print("Check if it is a qth rooth:")
+        # print(gID**(q)) 
+
+
+        # print("-------------------------------")
+        # print("Encryption")
+        # print("The message to encrypt is : %s" % Msg)
 
         #decode the message to bytes and hash it
         Msg_bytes = bytearray(Msg.encode('utf-8'))
+        # H = self.hash3(gID**(r), max(len(Msg), MIN_MSG_LEN) )
         H = self.hash3(gID**(r), len(Msg))
 
         #bitwise addition
@@ -373,9 +350,6 @@ class IBE():
         #create the cyphertext to send it to someone else
         cypher_text = Ciphertext(r*P, Msg_xor)
 
-        self.outputFile.write('First value of the cyphertext: '+str(cypher_text.U)+'\n')
-        self.outputFile.write('Second value of the cyphertext: '+str(cypher_text.V)+'\n')
-
         print("The message after encryption in bytes: ")
         print(Msg_xor)
 
@@ -383,12 +357,55 @@ class IBE():
         #and independent of the machine which is running.
         decoded = binascii.hexlify(Msg_xor)
 
-        self.outputFile.write("This is a hex representation of the encrypted message."
-            +"This hex-code needs to be entered to the decryption script: " 
-            + str(decoded)[2:len(str(decoded))-1])
+        # self.outputFile.write("This is a hex representation of the encrypted message."
+        #     +"This hex-code needs to be entered to the decryption script: " 
+        #     + str(decoded)[2:len(str(decoded))-1])
 
         self.store_cypher_text(ID, cypher_text)
 
+    def decript(self, DIDCordX, DIDCordY, cypher_text):
+
+        # self.load_sys_paras()
+        p = self.p
+        q = self.q
+        Fp2 = self.Fp2
+        b = self.b
+        # print("-------------------------------")
+        # print("Decryption")
+
+        E2 = EllipticCurve2(Fp2([0]), Fp2([1]), Fp2)
+        # 将点(DIDCordX, DIDCordY) 表示成Fp2的一个点
+        DID = Point2(E2, Fp2([DIDCordX]), Fp2([DIDCordY]))
+
+        ##-------------------------------------------------
+        ## for r = 3247
+        ## cypherACordX = 233844
+        ## cypherACordY = 32655
+        ##
+        ## cypher_U = Point2(E2, Fp2([cypherACordX]), Fp2([cypherACordY]))
+        ## cypher_U = cypher_text.U
+
+        # print("The first value of the cyphertext is:")
+        # print(cypher_text['U'])
+        piont_x = cypher_text['U'][0]
+        piont_y = cypher_text['U'][1]
+        cypher_U = Point2(E2, Fp2([piont_x]), Fp2([piont_y]))
+        #//-------------------------------------------------
+
+        cypher_V = binascii.unhexlify(cypher_text['V'])
+
+        length = len(cypher_V)
+
+        hID = ModifWeil(DID, cypher_U, q, b)
+
+        # print("hID is equal to:")
+        # print(hID)
+
+        H = self.hash3(hID, length)
+
+        print("The decrypted message is:")
+        Msg = self.xor(cypher_V, H)
+        print(Msg.decode())
 
     def store_cypher_text(self, ID, cypher_text):
 
@@ -414,106 +431,71 @@ class IBE():
         with open(filename, 'w') as f_obj:
             json.dump(cypher_text_list, f_obj)
 
+        # with open(filename, 'w') as f_obj:
+        #     json.dump(msgs, f_obj)
+
     def load_cypher_text(self):
         filename = 'cypher_text.json'
         with open(filename) as f_obj:
             cypher_text = json.load(f_obj)
         return cypher_text
 
-    def decript(self, DIDCordX, DIDCordY, cypher_text):
 
-        self.load_sys_paras()
-        p = self.p
-        q = self.q
-        Fp2 = self.Fp2
-        b = self.b
-        print("-------------------------------")
-        print("Decryption")
+class IBEBuilder():
 
-        E2 = EllipticCurve2(Fp2([0]), Fp2([1]), Fp2)
-        # 将点(DIDCordX, DIDCordY) 表示成Fp2的一个点
-        DID = Point2(E2, Fp2([DIDCordX]), Fp2([DIDCordY]))
+    def __init__(self):
+        self.ibe = IBE()
+        self.filename = 'sys_paras.json'
 
-        #-------------------------------------------------
-        # for r = 3247
-        # cypherACordX = 233844
-        # cypherACordY = 32655
-        #
-        # cypher_U = Point2(E2, Fp2([cypherACordX]), Fp2([cypherACordY]))
-        # cypher_U = cypher_text.U
+    def construct_ibe(self):
+        try:
+            self.load_sys_paras()
+            print("load system parameters")
+        except Exception as e:
+            print(e)
+            p, q, P, Ppub, s = self.create_sys_paras()
+            self.store_sys_paras(p, q, P, Ppub, s)
+            print("create system parameters")
 
-        print("The first value of the cyphertext is:")
-        print(cypher_text['U'])
-        piont_x = cypher_text['U'][0]
-        piont_y = cypher_text['U'][1]
-        cypher_U = Point2(E2, Fp2([piont_x]), Fp2([piont_y]))
-        #//-------------------------------------------------
+    def create_sys_paras(self):
+        return self.ibe.setup()
 
-        cypher_V = binascii.unhexlify(cypher_text['V'])
+    def store_sys_paras(self, p, q, P, Ppub, s):
+        output = {}
+        output['p'] = p
+        output['q'] = q
+        output['s'] = s
 
-        length = len(cypher_V)
+        point = [P.x.n, P.y.n]
+        output['P'] = point
 
-        hID = ModifWeil(DID, cypher_U, q, b)
+        point = [Ppub.x.n, Ppub.y.n]
+        output['Ppub'] = point
 
-        print("hID is equal to:")
-        print(hID)
+        filename = self.filename
+        with open(filename, 'w') as f_obj:
+            json.dump(output, f_obj)
 
-        H = self.hash3(hID, length)
+    def load_sys_paras(self):
+        filename = self.filename
+        # output['s'] = s
+        with open(filename) as f_obj:
+            sys_paras = json.load(f_obj)
+            self.ibe.p = sys_paras['p']
+            self.ibe.q = sys_paras['q']
+            self.ibe.Fp = FiniteField(self.ibe.p,1)
+            self.ibe.Fp2 = FiniteField(self.ibe.p, 2, Polynomial([ModP(1, self.ibe.p), ModP(1, self.ibe.p), ModP(1, self.ibe.p)], self.ibe.p))
+            self.ibe.b = self.ibe.Fp2([0, 1])
+            self.ibe.EC = EllipticCurve(ModP(0, self.ibe.p), ModP(1, self.ibe.p))
+            self.ibe.s = sys_paras['s']
+            P_x, P_y = self.get_point_from_list(sys_paras['P'])
+            Ppub_x, Ppub_y = self.get_point_from_list(sys_paras['Ppub'])
+            self.ibe.P = Point(self.ibe.EC, P_x, P_y)
+            self.ibe.Ppub = Point(self.ibe.EC, Ppub_x, Ppub_y)
 
-        print("The decrypted message is:")
-        Msg = self.xor(cypher_V, H)
-        print(Msg.decode())
-
-
-
-if __name__=='__main__':
-
-    #open file to save parameters gotten
-    #through this computation
-    ibe = IBE()
-
-    print("==-------------------------------")
-
-    # outputFile = open('parameters.txt','w')
-    ibe.outputFile.write('If you are going to change the parameters in the encrypting file, you need to adapt some parameters in the decryption file'+'\n')
-    ibe.outputFile.write('You will always need to adapt the coordinates of DID and you need to copy the last output line of this file to properly decrypt'+'\n')
-    ibe.outputFile.write('-------------------------------'+'\n')
-
-
-    print("-------------------------------")
-        
-
-
-    print("-------------------------------")
-    print("Initializing:")
-        
-    ##-----------------------------setup(), 返回公开参数---------------------------------
-    ibe.setup()
-    # P, Ppub, EC, p, q, s, Fp2, b = setup()
-
-    
-    ##//-----------------------------setup(), 返回公开参数---------------------------------
-    
-
-    ##------------------------密钥生成-----------------------------
-
-    ID = input("Enter the ID you want to use: ")
-    #print("The ID is:")
-    #ID = "steve@uni.lu"
-    print(ID)
-
-    ibe.extract(ID)
-
-    ##//------------------------密钥生成-----------------------------
-
-    ##-------------------------加密-----------------------------
-
-    print("\n")
-    M = input("Enter the message you want to encrypt: ")
-    ibe.encrypt(ID, M)
-
-    ##//-------------------------加密-----------------------------
-    #close file
-
-    ibe.outputFile.close()
-    os.system('pause')
+    def get_point_from_list(self, point):
+        x = point[0]
+        y = point[1]
+        Px = ModP(x, self.ibe.p)
+        Py = ModP(y, self.ibe.p)
+        return Px, Py
